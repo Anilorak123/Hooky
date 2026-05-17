@@ -27,18 +27,6 @@ Yarnling is a cozy idle game for Android where you grow a handmade craft busines
 
 ---
 
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Language | Python |
-| Framework | Kivy / KivyMD |
-| Target platform | Android (Google Play) |
-| Ads | Google AdMob |
-| Version control | Git / GitHub |
-
----
-
 ## 📁 Project Structure
 
 ```
@@ -55,34 +43,6 @@ yarnling/
 ├── saves/               # Local save file handling
 └── buildozer.spec       # Android build configuration
 ```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Python 3.10+
-- Kivy 2.3+
-- Buildozer (for Android builds)
-
-### Run locally
-
-```bash
-git clone https://github.com/yourusername/yarnling.git
-cd yarnling
-pip install kivy
-python main.py
-```
-
-### Build for Android
-
-```bash
-pip install buildozer
-buildozer android debug
-```
-
----
 
 ## 🗺️ Roadmap
 
@@ -104,10 +64,5 @@ This is a solo indie project, but feedback and suggestions are very welcome! Fee
 
 ---
 
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
 
 <p align="center">Made with 🧶 and a lot of patience</p>
