@@ -1,4 +1,4 @@
-# 🧶 Yarnling — Cozy Crochet Idle Game
+# 🧶 Hooky — Cozy Crochet Idle Game
 
 > Build your dream crochet business, one stitch at a time.
 
