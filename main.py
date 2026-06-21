@@ -1,13 +1,15 @@
 import json
 from kivymd.app import MDApp
+from kivy.uix.screenmanager import ScreenManager
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.button import MDRaisedButton, MDFlatButton
 from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
-from kivymd.uix.scrollview import ScrollView
+from kivy.uix.scrollview import ScrollView
 from kivy.clock import Clock
 from logic.game import GameState
+from screens.title_screen import TitleScreen
 
 with open("data/items.json", encoding="utf-8") as f:
     ITEMS = json.load(f)
@@ -18,15 +20,13 @@ class GameScreen(MDScreen):
         self.game = GameState()
         self.game.load()
 
-        # Główny layout
         root = MDBoxLayout(
             orientation="vertical",
             padding=20,
             spacing=12,
-            md_bg_color="#F5EEF8"  # jasny fiolet w tle
+            md_bg_color="#F5EEF8"
         )
 
-        # Nagłówek z monetami
         header = MDCard(
             padding=16,
             radius=[16],
@@ -44,7 +44,6 @@ class GameScreen(MDScreen):
         header.add_widget(self.coins_label)
         root.add_widget(header)
 
-        # Status
         self.status_label = MDLabel(
             text="Wybierz co chcesz zrobic:",
             halign="center",
@@ -55,7 +54,6 @@ class GameScreen(MDScreen):
         )
         root.add_widget(self.status_label)
 
-        # Karty przedmiotów
         scroll = ScrollView()
         items_layout = MDBoxLayout(
             orientation="vertical",
@@ -73,7 +71,8 @@ class GameScreen(MDScreen):
                 size_hint_y=None,
                 height=90
             )
-            card_layout = MDBoxLayout(orientation="vertical", spacing=4)
+            row = MDBoxLayout(orientation="horizontal", spacing=10)
+            info_col = MDBoxLayout(orientation="vertical")
 
             name_label = MDLabel(
                 text=item["name"],
@@ -96,8 +95,6 @@ class GameScreen(MDScreen):
             btn.item = item
             btn.bind(on_press=self.on_craft)
 
-            row = MDBoxLayout(orientation="horizontal", spacing=10)
-            info_col = MDBoxLayout(orientation="vertical")
             info_col.add_widget(name_label)
             info_col.add_widget(info_label)
             row.add_widget(info_col)
@@ -108,7 +105,6 @@ class GameScreen(MDScreen):
         scroll.add_widget(items_layout)
         root.add_widget(scroll)
 
-        # Ekwipunek
         inv_card = MDCard(
             padding=12,
             radius=[12],
@@ -125,7 +121,6 @@ class GameScreen(MDScreen):
         inv_card.add_widget(self.inventory_label)
         root.add_widget(inv_card)
 
-        # Przycisk sprzedaży
         sell_btn = MDRaisedButton(
             text="Sprzedaj wszystko",
             md_bg_color="#1D9E75",
@@ -161,11 +156,17 @@ class GameScreen(MDScreen):
         inv = [i["name"] for i in self.game.inventory]
         self.inventory_label.text = "Ekwipunek: " + (", ".join(inv) if inv else "pusty")
 
+
 class HookeyApp(MDApp):
     def build(self):
         self.theme_cls.primary_palette = "Purple"
         self.theme_cls.theme_style = "Light"
-        return GameScreen()
+
+        sm = ScreenManager()
+        sm.add_widget(TitleScreen(name="title"))
+        sm.add_widget(GameScreen(name="game"))
+        return sm
+
 
 if __name__ == "__main__":
     HookeyApp().run()
