@@ -7,18 +7,37 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build with ArtemSBulgakov/buildozer-action
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
         with:
-          command: android debug
-          buildozer_version: stable
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autoconf automake libtool \
+            openjdk-17-jdk \
+            zip unzip \
+            libffi-dev libssl-dev \
+            build-essential git
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install buildozer
+          pip install cython==0.29.33
+
+      - name: Build APK
+        run: |
+          yes | buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: hookey-apk
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: bin/*.apk
