@@ -6,56 +6,19 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Build with ArtemSBulgakov/buildozer-action
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
         with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y autoconf automake libtool openjdk-17-jdk zip unzip
-          pip install buildozer cython kivy kivymd
-
-      - name: Create buildozer.spec
-        run: |
-          python3 - <<'PYEOF'
-          spec = """[app]
-          title = Hookey
-          package.name = hookey
-          package.domain = org.hookey
-          source.dir = .
-          source.include_exts = py,png,jpg,kv,atlas,json
-          version = 0.1
-          requirements = python3,kivy,kivymd
-          orientation = portrait
-          fullscreen = 0
-          android.permissions = INTERNET
-          android.api = 33
-          android.minapi = 21
-          android.sdk = 33
-          android.ndk = 25b
-          android.ndk_api = 21
-          android.accept_sdk_license = True
-          android.arch = arm64-v8a
-
-          [buildozer]
-          log_level = 2
-          """
-          with open("buildozer.spec", "w") as f:
-              f.write(spec)
-          print("buildozer.spec created!")
-          PYEOF
-
-      - name: Build APK
-        run: yes | buildozer android debug
+          command: android debug
+          buildozer_version: stable
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: hookey-apk
-          path: bin/*.apk
+          path: ${{ steps.buildozer.outputs.filename }}
