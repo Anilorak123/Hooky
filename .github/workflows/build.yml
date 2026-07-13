@@ -24,7 +24,8 @@ jobs:
             openjdk-17-jdk \
             zip unzip \
             libffi-dev libssl-dev \
-            build-essential git
+            build-essential git \
+            libltdl-dev pkg-config
 
       - name: Install Python dependencies
         run: |
@@ -32,10 +33,16 @@ jobs:
           pip install buildozer
           pip install cython==0.29.33
 
+      - name: Accept Android licenses
+        run: |
+          mkdir -p $HOME/.android
+          touch $HOME/.android/repositories.cfg
+          echo "count=0" > $HOME/.android/repositories.cfg
+
       - name: Build APK
         run: |
           export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
-          buildozer android debug
+          buildozer android debug 2>&1
         env:
           BUILDOZER_WARN_ON_ROOT: 0
 
