@@ -8,8 +8,11 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
 from kivy.uix.scrollview import ScrollView
 from kivy.clock import Clock
+from sympy import root
 from logic.game import GameState
 from screens.title_screen import TitleScreen
+from screens.upgrades_screen import UpgradesScreen
+
 
 with open("data/items.json", encoding="utf-8") as f:
     ITEMS = json.load(f)
@@ -35,7 +38,7 @@ class GameScreen(MDScreen):
             height=80
         )
         self.coins_label = MDLabel(
-            text=f"Monety: {self.game.coins}",
+            text=f"Coins: {self.game.coins}",
             font_style="H5",
             theme_text_color="Custom",
             text_color="#FFFFFF",
@@ -45,7 +48,7 @@ class GameScreen(MDScreen):
         root.add_widget(header)
 
         self.status_label = MDLabel(
-            text="Wybierz co chcesz zrobic:",
+            text="Choose what to make:",
             halign="center",
             theme_text_color="Custom",
             text_color="#4A235A",
@@ -81,13 +84,13 @@ class GameScreen(MDScreen):
                 text_color="#4A235A"
             )
             info_label = MDLabel(
-                text=f"Czas: {item['time']}s   |   Cena: {item['price']} monet",
+                text=f"Time: {item['time']}s   |   Price: {item['price']} coins",
                 theme_text_color="Custom",
                 text_color="#888888",
                 font_style="Caption"
             )
             btn = MDRaisedButton(
-                text="Szydelkuj",
+                text="Crochet",
                 md_bg_color="#A05CC7",
                 size_hint_x=None,
                 width=140
@@ -113,7 +116,7 @@ class GameScreen(MDScreen):
             height=60
         )
         self.inventory_label = MDLabel(
-            text="Ekwipunek: pusty",
+            text="Inventory: empty",
             theme_text_color="Custom",
             text_color="#4A235A",
             halign="center"
@@ -122,13 +125,22 @@ class GameScreen(MDScreen):
         root.add_widget(inv_card)
 
         sell_btn = MDRaisedButton(
-            text="Sprzedaj wszystko",
+            text="Sell All",
             md_bg_color="#1D9E75",
             size_hint_x=1,
             height=50
         )
         sell_btn.bind(on_press=self.on_sell_all)
         root.add_widget(sell_btn)
+
+        upgrades_btn = MDRaisedButton(
+            text="Upgrades",
+            md_bg_color="#7B4FA6",
+            size_hint_x=1,
+            height=50
+        )
+        upgrades_btn.bind(on_press=lambda x: setattr(self.manager, 'current', 'upgrades'))
+        root.add_widget(upgrades_btn)
 
         self.add_widget(root)
         Clock.schedule_interval(self.update, 1)
@@ -139,25 +151,25 @@ class GameScreen(MDScreen):
 
     def on_sell_all(self, btn):
         if not self.game.inventory:
-            self.status_label.text = "Ekwipunek jest pusty!"
+            self.status_label.text = "Inventory is empty!"
             return
         total = 0
         for item in list(self.game.inventory):
             self.game.sell_item(item["name"])
             total += item["price"]
-        self.status_label.text = f"Sprzedano wszystko za {total} monet!"
+        self.status_label.text = f"Sold everything for {total} coins!"
         self.game.save()
 
     def update(self, dt):
         msg = self.game.check_crafting()
         if msg:
             self.status_label.text = msg
-        self.coins_label.text = f"Monety: {self.game.coins}"
+        self.coins_label.text = f"Coins: {self.game.coins}"
         inv = [i["name"] for i in self.game.inventory]
-        self.inventory_label.text = "Ekwipunek: " + (", ".join(inv) if inv else "pusty")
+        self.inventory_label.text = "Inventory: " + (", ".join(inv) if inv else "empty")
 
 
-class HookeyApp(MDApp):
+class HookyApp(MDApp):
     def build(self):
         self.theme_cls.primary_palette = "Purple"
         self.theme_cls.theme_style = "Light"
@@ -165,8 +177,12 @@ class HookeyApp(MDApp):
         sm = ScreenManager()
         sm.add_widget(TitleScreen(name="title"))
         sm.add_widget(GameScreen(name="game"))
+        game_screen = GameScreen(name="game")
+        sm.add_widget(TitleScreen(name="title"))
+        sm.add_widget(game_screen)
+        sm.add_widget(UpgradesScreen(game=game_screen.game, name="upgrades"))
         return sm
 
 
 if __name__ == "__main__":
-    HookeyApp().run()
+    HookyApp().run()

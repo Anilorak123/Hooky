@@ -38,7 +38,7 @@ class TitleScreen(MDScreen):
             height=80
         )
         title_label = MDLabel(
-            text="Hookey",
+            text="Hooky",
             font_style="H3",
             theme_text_color="Custom",
             text_color="#FFFFFF",
@@ -64,7 +64,7 @@ class TitleScreen(MDScreen):
 
         # Opis
         desc_label = MDLabel(
-            text="Rozwijaj swój biznes rękodzielniczy,\njeden ścieg na raz!",
+            text="Grow your crochet business,\none stitch at a time!",
             halign="center",
             theme_text_color="Custom",
             text_color="#4A235A",
@@ -76,7 +76,7 @@ class TitleScreen(MDScreen):
 
         # Przycisk Start
         start_btn = MDRaisedButton(
-            text="Zagraj",
+            text="Play",
             md_bg_color="#A05CC7",
             size_hint_x=1,
             height=60,
@@ -90,7 +90,7 @@ class TitleScreen(MDScreen):
 
         # Wersja
         version_label = MDLabel(
-            text="v0.1 — made with 🧶 and Python",
+            text="v0.1 — made with love and Python",
             halign="center",
             theme_text_color="Custom",
             text_color="#AAAAAA",

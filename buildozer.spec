@@ -1,7 +1,7 @@
 [app]
-title = Hookey
-package.name = hookey
-package.domain = org.hookey
+title = Hooky
+package.name = Hooky
+package.domain = org.Hooky
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json
 version = 0.1

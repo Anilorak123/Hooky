@@ -1,4 +1,6 @@
-name: Build Hookey APK
+name: Build Hooky APK
+
+#& C:\Users\karol\anaconda3\python.exe c:/Users/karol/Projects/Hookey/Hooky/main.py
 
 on:
   push:
@@ -43,5 +45,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: hookey-apk
+          name: Hooky-apk
           path: bin/*.apk

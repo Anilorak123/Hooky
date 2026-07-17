@@ -1,5 +1,5 @@
 [
-    {"name": "Czapka", "time": 10, "price": 30},
-    {"name": "Szalik", "time": 20, "price": 50},
-    {"name": "Skarpetki", "time": 15, "price": 40}
+    {"name": "Beanie", "time": 10, "price": 30},
+    {"name": "Scarf", "time": 20, "price": 50},
+    {"name": "Socks", "time": 15, "price": 40}
 ]
