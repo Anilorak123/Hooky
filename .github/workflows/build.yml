@@ -1,6 +1,6 @@
 name: Build Hooky APK
 
-#& C:\Users\karol\anaconda3\python.exe c:/Users/karol/Projects/Hookey/Hooky/main.py
+# & C:\Users\karol\anaconda3\python.exe c:/Users/karol/Projects/Hookey/Hooky/main.py
 
 on:
   push:

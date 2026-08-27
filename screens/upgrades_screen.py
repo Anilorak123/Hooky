@@ -4,31 +4,7 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.card import MDCard
 from kivy.uix.scrollview import ScrollView
-
-
-UPGRADES = [
-    {
-        "id": "faster_hands",
-        "name": "Faster Hands",
-        "description": "You craft twice as fast",
-        "cost": 100,
-        "multiplier": 0.5,  # multiplies crafting time by 0.5
-    },
-    {
-        "id": "better_yarn",
-        "name": "Better Yarn",
-        "description": "Items are worth 50% more",
-        "cost": 200,
-        "price_bonus": 0.5,
-    },
-    {
-        "id": "second_hook",
-        "name": "Second Hook",
-        "description": "You can craft two items at a time",
-        "cost": 500,
-        "extra_slot": True,
-    },
-]
+from logic.game import WORKERS
 
 
 class UpgradesScreen(MDScreen):
@@ -55,6 +31,7 @@ class UpgradesScreen(MDScreen):
             size_hint_y=None,
             height=70
         )
+        header_layout = MDBoxLayout(orientation="vertical")
         self.coins_label = MDLabel(
             text=f"Coins: {self.game.coins}",
             font_style="H5",
@@ -62,11 +39,20 @@ class UpgradesScreen(MDScreen):
             text_color="#FFFFFF",
             halign="center"
         )
-        header.add_widget(self.coins_label)
+        self.cps_label = MDLabel(
+            text=f"{self.game.coins_per_second()} coins/sec",
+            font_style="Caption",
+            theme_text_color="Custom",
+            text_color="#DEC6F0",
+            halign="center"
+        )
+        header_layout.add_widget(self.coins_label)
+        header_layout.add_widget(self.cps_label)
+        header.add_widget(header_layout)
         root.add_widget(header)
 
         title = MDLabel(
-            text="Workshop Upgrades",
+            text="Hire Workers",
             font_style="H6",
             theme_text_color="Custom",
             text_color="#4A235A",
@@ -76,7 +62,7 @@ class UpgradesScreen(MDScreen):
         )
         root.add_widget(title)
 
-        # Lista ulepszeń
+        # Lista pracowników
         scroll = ScrollView()
         items_layout = MDBoxLayout(
             orientation="vertical",
@@ -86,7 +72,7 @@ class UpgradesScreen(MDScreen):
         )
         items_layout.bind(minimum_height=items_layout.setter("height"))
 
-        for upgrade in UPGRADES:
+        for worker in WORKERS:
             card = MDCard(
                 padding=12,
                 radius=[12],
@@ -97,30 +83,31 @@ class UpgradesScreen(MDScreen):
             row = MDBoxLayout(orientation="horizontal", spacing=10)
             info_col = MDBoxLayout(orientation="vertical", spacing=4)
 
+            count = self.game.workers.get(worker["id"], 0)
+            cost = self.game.worker_cost(worker)
+            can_afford = self.game.coins >= cost
+
             name_label = MDLabel(
-                text=upgrade["name"],
+                text=f"{worker['name']}  x{count}",
                 font_style="H6",
                 theme_text_color="Custom",
                 text_color="#4A235A"
             )
             desc_label = MDLabel(
-                text=upgrade["description"],
+                text=f"{worker['description']} • {worker['coins_per_second']} coins/sec each",
                 font_style="Caption",
                 theme_text_color="Custom",
                 text_color="#888888"
             )
 
-            already_bought = upgrade["id"] in self.game.upgrades
-
             btn = MDRaisedButton(
-                text="Purchased" if already_bought else f"{upgrade['cost']} coins",
-                md_bg_color="#AAAAAA" if already_bought else "#A05CC7",
+                text=f"Hire\n{cost} coins",
+                md_bg_color="#A05CC7" if can_afford else "#CCCCCC",
                 size_hint_x=None,
-                width=150,
-                disabled=already_bought
+                width=120
             )
-            btn.upgrade = upgrade
-            btn.bind(on_press=self.on_buy)
+            btn.worker = worker
+            btn.bind(on_press=self.on_hire)
 
             info_col.add_widget(name_label)
             info_col.add_widget(desc_label)
@@ -134,7 +121,7 @@ class UpgradesScreen(MDScreen):
 
         # Przycisk powrotu
         back_btn = MDRaisedButton(
-            text="Back to Game",
+            text="Back to game",
             md_bg_color="#1D9E75",
             size_hint_x=1,
             height=50
@@ -144,16 +131,16 @@ class UpgradesScreen(MDScreen):
 
         self.add_widget(root)
 
-    def on_buy(self, btn):
-        upgrade = btn.upgrade
-        if self.game.coins >= upgrade["cost"]:
-            self.game.coins -= upgrade["cost"]
-            self.game.upgrades.add(upgrade["id"])
-            self.game.apply_upgrade(upgrade)
-            self.game.save()
-            self.build_ui()  # odśwież ekran
+    def on_hire(self, btn):
+        success = self.game.buy_worker(btn.worker)
+        if success:
+            self.build_ui()
         else:
-            btn.text = "Not enough coins!"
+            btn.text = "Not enough\ncoins!"
+    
+    def on_pre_enter(self):
+        """Called every time you enter the screen"""
+        self.build_ui()
 
     def go_back(self, btn):
         self.manager.current = "game"

@@ -23,6 +23,14 @@ class GameScreen(MDScreen):
         self.game = GameState()
         self.game.load()
 
+        # Check for offline earnings
+        earnings, seconds = self.game.calculate_offline_earnings()
+        if earnings > 0:
+            self.game.coins += earnings
+            self.game.save()
+            self._offline_earnings_msg = None
+
+
         root = MDBoxLayout(
             orientation="vertical",
             padding=20,
@@ -46,6 +54,17 @@ class GameScreen(MDScreen):
         )
         header.add_widget(self.coins_label)
         root.add_widget(header)
+
+        self.cps_label = MDLabel(
+            text="0 coins/sec",
+            font_style="Caption",
+            theme_text_color="Custom",
+            text_color="#4A235A",
+            halign="center",
+            size_hint_y=None,
+            height=25
+        )
+        root.add_widget(self.cps_label)
 
         self.status_label = MDLabel(
             text="Choose what to make:",
@@ -167,7 +186,13 @@ class GameScreen(MDScreen):
         self.coins_label.text = f"Coins: {self.game.coins}"
         inv = [i["name"] for i in self.game.inventory]
         self.inventory_label.text = "Inventory: " + (", ".join(inv) if inv else "empty")
-
+        # Show offline earnings message if applicable
+        if hasattr(self, '_offline_earnings_msg') and self._offline_earnings_msg:
+            self.status_label.text = self._offline_earnings_msg
+            self._offline_earnings_msg = None  # Reset after showing once
+        cps = self.game.coins_per_second()
+        self.game.coins += cps
+        self.cps_label.text = f"{cps} coins/sec"
 
 class HookyApp(MDApp):
     def build(self):
@@ -182,6 +207,11 @@ class HookyApp(MDApp):
         sm.add_widget(game_screen)
         sm.add_widget(UpgradesScreen(game=game_screen.game, name="upgrades"))
         return sm
+    
+    def on_stop(self):
+        # Save the game state when the app is closed
+        game_screen = self.root.get_screen("game")
+        game_screen.game.save_close_time()
 
 
 if __name__ == "__main__":

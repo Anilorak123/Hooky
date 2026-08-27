@@ -2,6 +2,49 @@ import time
 import json
 import os
 
+WORKERS = [
+    {
+        "id": "beanie_worker",
+        "name": "Beanie Crocheter",
+        "description": "Automatically makes beanies",
+        "coins_per_second": 2,
+        "cost": 500,
+        "emoji": "🧶"
+    },
+    {
+        "id": "scarf_worker",
+        "name": "Scarf Crocheter",
+        "description": "Automatically makes scarves",
+        "coins_per_second": 5,
+        "cost": 1500,
+        "emoji": "🧣"
+    },
+    {
+        "id": "socks_worker",
+        "name": "Socks Crocheter",
+        "description": "Automatically makes socks",
+        "coins_per_second": 10,
+        "cost": 4000,
+        "emoji": "🧦"
+    },
+    {
+        "id": "amigurumi_artist",
+        "name": "Amigurumi Artist",
+        "description": "Makes cute plushies",
+        "coins_per_second": 25,
+        "cost": 12000,
+        "emoji": "🐻"
+    },
+    {
+        "id": "workshop_manager",
+        "name": "Workshop Manager",
+        "description": "Manages the whole workshop",
+        "coins_per_second": 75,
+        "cost": 40000,
+        "emoji": "👩"
+    },
+]
+
 
 class GameState:
     def __init__(self):
@@ -10,9 +53,16 @@ class GameState:
         self.craft_start_time = None
         self.inventory = []
         self.upgrades = set()
-        self.time_multiplier = 1.0   # im mniejszy tym szybciej
-        self.price_multiplier = 1.0  # im większy tym drożej
-        self.extra_slot = False
+        self.workers = {}  # id -> count
+        self.time_multiplier = 1.0
+        self.price_multiplier = 1.0
+
+    def coins_per_second(self):
+        total = 0
+        for worker in WORKERS:
+            count = self.workers.get(worker["id"], 0)
+            total += worker["coins_per_second"] * count
+        return total
 
     def start_crafting(self, item):
         if self.item_in_progress is not None:
@@ -44,22 +94,45 @@ class GameState:
                 return f"Sold {item['name']} for {price} coins!"
         return "You don't have that item."
 
-    def apply_upgrade(self, upgrade):
-        if "multiplier" in upgrade:
-            self.time_multiplier *= upgrade["multiplier"]
-        if "price_bonus" in upgrade:
-            self.price_multiplier += upgrade["price_bonus"]
-        if upgrade.get("extra_slot"):
-            self.extra_slot = True
+    def buy_worker(self, worker):
+        cost = self.worker_cost(worker)
+        if self.coins >= cost:
+            self.coins -= cost
+            self.workers[worker["id"]] = self.workers.get(worker["id"], 0) + 1
+            self.save()
+            return True
+        return False
+
+    def worker_cost(self, worker):
+        count = self.workers.get(worker["id"], 0)
+        # każdy kolejny pracownik kosztuje 15% więcej
+        return int(worker["cost"] * (1.15 ** count))
+
+    def calculate_offline_earnings(self):
+        if not os.path.exists("saves/save.json"):
+            return 0, 0
+        try:
+            with open("saves/save.json") as f:
+                data = json.load(f)
+        except json.JSONDecodeError:
+            return 0, 0
+        close_time = data.get("close_time", None)
+        if close_time is None:
+            return 0, 0
+        seconds_away = time.time() - close_time
+        seconds_away = min(seconds_away, 8 * 3600)
+        earnings = int(seconds_away * self.coins_per_second())
+        return earnings, int(seconds_away)
 
     def save(self):
         data = {
             "coins": self.coins,
             "inventory": self.inventory,
             "upgrades": list(self.upgrades),
+            "workers": self.workers,
             "time_multiplier": self.time_multiplier,
             "price_multiplier": self.price_multiplier,
-            "extra_slot": self.extra_slot,
+            "close_time": time.time()
         }
         os.makedirs("saves", exist_ok=True)
         with open("saves/save.json", "w") as f:
@@ -67,11 +140,14 @@ class GameState:
 
     def load(self):
         if os.path.exists("saves/save.json"):
-            with open("saves/save.json") as f:
-                data = json.load(f)
-            self.coins = data.get("coins", 0)
-            self.inventory = data.get("inventory", [])
-            self.upgrades = set(data.get("upgrades", []))
-            self.time_multiplier = data.get("time_multiplier", 1.0)
-            self.price_multiplier = data.get("price_multiplier", 1.0)
-            self.extra_slot = data.get("extra_slot", False)
+            try:
+                with open("saves/save.json") as f:
+                    data = json.load(f)
+                self.coins = data.get("coins", 0)
+                self.inventory = data.get("inventory", [])
+                self.upgrades = set(data.get("upgrades", []))
+                self.workers = data.get("workers", {})
+                self.time_multiplier = data.get("time_multiplier", 1.0)
+                self.price_multiplier = data.get("price_multiplier", 1.0)
+            except json.JSONDecodeError:
+                print("Save file corrupted, starting fresh!")
