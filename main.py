@@ -12,6 +12,7 @@ from sympy import root
 from logic.game import GameState
 from screens.title_screen import TitleScreen
 from screens.upgrades_screen import UpgradesScreen
+from screens.yarn_screen import YarnScreen
 
 
 with open("data/items.json", encoding="utf-8") as f:
@@ -43,16 +44,35 @@ class GameScreen(MDScreen):
             radius=[16],
             md_bg_color="#7B4FA6",
             size_hint_y=None,
-            height=80
+            height=110
         )
+        header_layout = MDBoxLayout(orientation="vertical", spacing=4)
+
         self.coins_label = MDLabel(
-            text=f"Coins: {self.game.coins}",
+            text=f"Coins: {int(self.game.coins)}",
             font_style="H5",
             theme_text_color="Custom",
             text_color="#FFFFFF",
             halign="center"
         )
-        header.add_widget(self.coins_label)
+        self.level_label = MDLabel(
+            text=f"Level {self.game.level} — {self.game.get_current_level_data()['title']}",
+            font_style="Caption",
+            theme_text_color="Custom",
+            text_color="#DEC6F0",
+            halign="center"
+        )
+        self.xp_label = MDLabel(
+            text=f"XP: {self.game.xp}",
+            font_style="Caption",
+            theme_text_color="Custom",
+            text_color="#DEC6F0",
+            halign="center"
+        )
+        header_layout.add_widget(self.coins_label)
+        header_layout.add_widget(self.level_label)
+        header_layout.add_widget(self.xp_label)
+        header.add_widget(header_layout)
         root.add_widget(header)
 
         self.cps_label = MDLabel(
@@ -161,6 +181,15 @@ class GameScreen(MDScreen):
         upgrades_btn.bind(on_press=lambda x: setattr(self.manager, 'current', 'upgrades'))
         root.add_widget(upgrades_btn)
 
+        yarn_btn = MDRaisedButton(
+            text="Yarn Shop",
+            md_bg_color="#BA7517",
+            size_hint_x=1,
+            height=50
+        )
+        yarn_btn.bind(on_press=lambda x: setattr(self.manager, "current", "yarn"))
+        root.add_widget(yarn_btn)
+
         self.add_widget(root)
         Clock.schedule_interval(self.update, 1)
 
@@ -180,19 +209,34 @@ class GameScreen(MDScreen):
         self.game.save()
 
     def update(self, dt):
+        # Dodaj monety od pracowników
+        cps = self.game.coins_per_second()
+        self.game.coins += cps * dt
+        # Update level labels
+        self.level_label.text = f"Level {self.game.level} — {self.game.get_current_level_data()['title']}"
+        self.xp_label.text = f"XP: {self.game.xp}"
+
+        # Show level up message
+        if self.game.level_up_message:
+            self.status_label.text = self.game.level_up_message
+            self.game.level_up_message = None
+            self.game.save()
+
+        # Sprawdź craftowanie
         msg = self.game.check_crafting()
         if msg:
             self.status_label.text = msg
-        self.coins_label.text = f"Coins: {self.game.coins}"
+
+        # Odśwież etykiety
+        self.coins_label.text = f"Coins: {int(self.game.coins)}"
+        self.cps_label.text = f"{cps} coins/sec"
         inv = [i["name"] for i in self.game.inventory]
         self.inventory_label.text = "Inventory: " + (", ".join(inv) if inv else "empty")
-        # Show offline earnings message if applicable
+
+        # Pokaż wiadomość o offline earnings
         if hasattr(self, '_offline_earnings_msg') and self._offline_earnings_msg:
             self.status_label.text = self._offline_earnings_msg
-            self._offline_earnings_msg = None  # Reset after showing once
-        cps = self.game.coins_per_second()
-        self.game.coins += cps
-        self.cps_label.text = f"{cps} coins/sec"
+            self._offline_earnings_msg = None
 
 class HookyApp(MDApp):
     def build(self):
@@ -206,6 +250,7 @@ class HookyApp(MDApp):
         sm.add_widget(TitleScreen(name="title"))
         sm.add_widget(game_screen)
         sm.add_widget(UpgradesScreen(game=game_screen.game, name="upgrades"))
+        sm.add_widget(YarnScreen(game=game_screen.game, name="yarn"))
         return sm
     
     def on_stop(self):

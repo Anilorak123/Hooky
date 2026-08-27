@@ -4,13 +4,16 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.card import MDCard
 from kivy.uix.scrollview import ScrollView
-from logic.game import WORKERS
+from logic.game import YARNS
 
 
-class UpgradesScreen(MDScreen):
+class YarnScreen(MDScreen):
     def __init__(self, game, **kwargs):
         super().__init__(**kwargs)
         self.game = game
+        self.build_ui()
+
+    def on_pre_enter(self):
         self.build_ui()
 
     def build_ui(self):
@@ -29,7 +32,7 @@ class UpgradesScreen(MDScreen):
             radius=[16],
             md_bg_color="#7B4FA6",
             size_hint_y=None,
-            height=70
+            height=80
         )
         header_layout = MDBoxLayout(orientation="vertical")
         self.coins_label = MDLabel(
@@ -39,20 +42,23 @@ class UpgradesScreen(MDScreen):
             text_color="#FFFFFF",
             halign="center"
         )
-        self.cps_label = MDLabel(
-            text=f"{self.game.coins_per_second()} coins/sec",
+        current_yarn_name = next(
+            (y["name"] for y in YARNS if y["id"] == self.game.current_yarn), "Acrylic"
+        )
+        self.yarn_label = MDLabel(
+            text=f"Current yarn: {current_yarn_name}",
             font_style="Caption",
             theme_text_color="Custom",
             text_color="#DEC6F0",
             halign="center"
         )
         header_layout.add_widget(self.coins_label)
-        header_layout.add_widget(self.cps_label)
+        header_layout.add_widget(self.yarn_label)
         header.add_widget(header_layout)
         root.add_widget(header)
 
         title = MDLabel(
-            text="Hire Workers",
+            text="Yarn Shop",
             font_style="H6",
             theme_text_color="Custom",
             text_color="#4A235A",
@@ -62,7 +68,6 @@ class UpgradesScreen(MDScreen):
         )
         root.add_widget(title)
 
-        # Lista pracowników
         scroll = ScrollView()
         items_layout = MDBoxLayout(
             orientation="vertical",
@@ -72,45 +77,64 @@ class UpgradesScreen(MDScreen):
         )
         items_layout.bind(minimum_height=items_layout.setter("height"))
 
-        for worker in WORKERS:
+        for yarn in YARNS:
+            is_current = yarn["id"] == self.game.current_yarn
+            is_unlocked = yarn["id"] in self.game.unlocked_yarns
+
             card = MDCard(
                 padding=12,
                 radius=[12],
-                md_bg_color="#FFFFFF",
+                md_bg_color="#EDE0F5" if is_current else "#FFFFFF",
                 size_hint_y=None,
                 height=100
             )
             row = MDBoxLayout(orientation="horizontal", spacing=10)
+
+            # Kolorowy pasek po lewej
+            color_bar = MDCard(
+                md_bg_color=yarn["color"],
+                size_hint_x=None,
+                width=8,
+                radius=[8]
+            )
+            row.add_widget(color_bar)
+
             info_col = MDBoxLayout(orientation="vertical", spacing=4)
-
-            count = self.game.workers.get(worker["id"], 0)
-            cost = self.game.worker_cost(worker)
-            can_afford = self.game.coins >= cost
-
             name_label = MDLabel(
-                text=f"{worker['name']}  x{count}",
+                text=yarn["name"] + (" (active)" if is_current else ""),
                 font_style="H6",
                 theme_text_color="Custom",
                 text_color="#4A235A"
             )
             desc_label = MDLabel(
-                text=f"{worker['description']} • {worker['coins_per_second']} coins/sec each",
+                text=f"{yarn['description']} • x{yarn['price_multiplier']} price",
                 font_style="Caption",
                 theme_text_color="Custom",
                 text_color="#888888"
             )
-
-            btn = MDRaisedButton(
-                text=f"Hire\n{cost} coins",
-                md_bg_color="#A05CC7" if can_afford else "#CCCCCC",
-                size_hint_x=None,
-                width=120
-            )
-            btn.worker = worker
-            btn.bind(on_press=self.on_hire)
-
             info_col.add_widget(name_label)
             info_col.add_widget(desc_label)
+
+            if is_current:
+                btn_text = "Selected"
+                btn_color = "#1D9E75"
+            elif is_unlocked:
+                btn_text = "Select"
+                btn_color = "#A05CC7"
+            else:
+                btn_text = f"Buy\n{yarn['cost']} coins"
+                btn_color = "#A05CC7" if self.game.coins >= yarn["cost"] else "#CCCCCC"
+
+            btn = MDRaisedButton(
+                text=btn_text,
+                md_bg_color=btn_color,
+                size_hint_x=None,
+                width=120,
+                disabled=is_current
+            )
+            btn.yarn = yarn
+            btn.bind(on_press=self.on_buy)
+
             row.add_widget(info_col)
             row.add_widget(btn)
             card.add_widget(row)
@@ -119,32 +143,20 @@ class UpgradesScreen(MDScreen):
         scroll.add_widget(items_layout)
         root.add_widget(scroll)
 
-        # Przycisk powrotu
         back_btn = MDRaisedButton(
             text="Back to game",
             md_bg_color="#1D9E75",
             size_hint_x=1,
             height=50
         )
-        back_btn.bind(on_press=self.go_back)
+        back_btn.bind(on_press=lambda x: setattr(self.manager, "current", "game"))
         root.add_widget(back_btn)
 
         self.add_widget(root)
 
-    def on_hire(self, btn):
-        success = self.game.buy_worker(btn.worker)
+    def on_buy(self, btn):
+        success, msg = self.game.buy_yarn(btn.yarn)
         if success:
             self.build_ui()
         else:
             btn.text = "Not enough\ncoins!"
-    
-    def on_pre_enter(self):
-        """Called every time you enter the screen"""
-        self.build_ui()
-
-    def on_pre_enter(self):
-        """Wywoływane za każdym razem gdy wchodzisz na ekran"""
-        self.build_ui()
-
-    def go_back(self, btn):
-        self.manager.current = "game"
